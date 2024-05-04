@@ -1492,6 +1492,13 @@ elseif(PS5)
     list(APPEND EXTRA_LIBS SceAudioOut)
     list(APPEND EXTRA_LIBS samplerate) # FIXME
   endif ()
+  if (SDL_VIDEO)
+    set(SDL_VIDEO_DRIVER_PS5 1)
+    file(GLOB PS5_VIDEO_SOURCES ${SDL2_SOURCE_DIR}/src/video/ps5/*.c)
+    set(SOURCE_FILES ${SOURCE_FILES} ${PS5_VIDEO_SOURCES})
+    set(HAVE_SDL_VIDEO TRUE)
+    list(APPEND EXTRA_LIBS SceVideoOut)
+  endif ()
   set(SDL_LIBSAMPLERATE_SHARED 0)
   CheckPTHREAD()
 
