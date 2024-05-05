@@ -48,6 +48,9 @@ typedef struct PS5_DeviceData
 } PS5_DeviceData;
 
 
+#define SCREEN_W 3840
+#define SCREEN_H 2160
+
 
 int sceSystemServiceHideSplashScreen(void);
 
@@ -143,8 +146,8 @@ static int PS5_UpdateWindowFramebuffer(_THIS, SDL_Window * window, const SDL_Rec
     struct kevent evt;
     int junk;
 
-    int w = 3840;
-    int h = 2176;
+    int w = (SCREEN_W + 0x3f) & ~0x3f;
+    int h = (SCREEN_H + 0x3f) & ~0x3f;
 
     surface = (SDL_Surface *)SDL_GetWindowData(window, PS5_SURFACE);
     if (!surface) {
@@ -206,7 +209,7 @@ static int PS5_VideoInit(_THIS)
         return SDL_SetError("sceVideoOutSetFlipRate");
     }
     sceVideoOutSetBufferAttribute2(&vattr, 0x8000000022000000UL, 0,
-				   3840, 2160, 0, 0, 0);
+				   SCREEN_W, SCREEN_H, 0, 0, 0);
 
     device_data->vbuf[0].data = vaddr;
     device_data->vbuf[1].data = vaddr + (memsize / 2);
@@ -217,8 +220,8 @@ static int PS5_VideoInit(_THIS)
 
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_RGBA8888;
-    mode.w = 3840;
-    mode.h = 2176;
+    mode.w = (SCREEN_W + 0x3f) & ~0x3f;
+    mode.h = (SCREEN_H + 0x3f) & ~0x3f;
     mode.refresh_rate = 60;
     mode.driverdata = NULL;
 
