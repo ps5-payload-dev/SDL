@@ -47,9 +47,13 @@ typedef struct PS5_DeviceData
   struct kevent *evt_queue;
 } PS5_DeviceData;
 
-
+#if 1
+#define SCREEN_W 1920
+#define SCREEN_H 1080
+#else
 #define SCREEN_W 3840
 #define SCREEN_H 2160
+#endif
 
 
 int sceSystemServiceHideSplashScreen(void);
