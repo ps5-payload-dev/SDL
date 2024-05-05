@@ -245,6 +245,19 @@ static void PS5_VideoQuit(_THIS)
 }
 
 
+int PS5_CreateWindow(_THIS, SDL_Window *window)
+{
+  if(window) {
+      SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+  }
+
+  return 0;
+}
+
+void PS5_DestroyWindow(_THIS, SDL_Window *window)
+{
+
+}
 
 static void PS5_DestroyDevice(SDL_VideoDevice *device)
 {
@@ -276,6 +289,8 @@ static SDL_VideoDevice *PS5_CreateDevice(void)
     device->VideoInit = PS5_VideoInit;
     device->VideoQuit = PS5_VideoQuit;
     device->PumpEvents = PS5_PumpEvents;
+    device->CreateSDLWindow = PS5_CreateWindow;
+    device->DestroyWindow = PS5_DestroyWindow;
     device->CreateWindowFramebuffer = PS5_CreateWindowFramebuffer;
     device->UpdateWindowFramebuffer = PS5_UpdateWindowFramebuffer;
     device->DestroyWindowFramebuffer = PS5_DestroyWindowFramebuffer;
