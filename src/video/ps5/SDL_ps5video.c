@@ -187,7 +187,6 @@ static int PS5_VideoInit(_THIS)
     }
 
     if(sceKernelMapDirectMemory(&vaddr, memsize, 0x33, 0, paddr, memalign)) {
-      perror("sceKernelMapDirectMemory");
         return SDL_SetError("sceKernelMapDirectMemory");
     }
 
@@ -211,8 +210,9 @@ static int PS5_VideoInit(_THIS)
 
     device_data->vbuf[0].data = vaddr;
     device_data->vbuf[1].data = vaddr + (memsize / 2);
-    if(sceVideoOutRegisterBuffers2(device_data->handle, 0, 0, device_data->vbuf, 2, &vattr, 0, NULL)) {
-      return SDL_SetError("sceVideoOutRegisterBuffers2");
+    if(sceVideoOutRegisterBuffers2(device_data->handle, 0, 0, device_data->vbuf,
+				   2, &vattr, 0, NULL)) {
+        return SDL_SetError("sceVideoOutRegisterBuffers2");
     }
 
     SDL_zero(mode);
@@ -222,7 +222,7 @@ static int PS5_VideoInit(_THIS)
     mode.refresh_rate = 60;
     mode.driverdata = NULL;
 
-    if (SDL_AddBasicVideoDisplay(&mode) < 0) {
+    if(SDL_AddBasicVideoDisplay(&mode) < 0) {
         return -1;
     }
 
