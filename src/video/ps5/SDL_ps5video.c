@@ -80,8 +80,8 @@ static void PS5_DrawPixelsAsTiles(uint32_t *src, uint32_t *dst)
         int ty = y / PS5_TILE_HEIGHT;
         for (int x = 0; x < w; x++) {
             int tx = x / PS5_TILE_WIDTH;
-            int t = (int)(PS5_TILE_SIZE * (tx + ty *
-                                                    ((double)w / PS5_TILE_WIDTH)));
+            int t = (int)(PS5_TILE_SIZE *
+                          (tx + ty * ((double)w / PS5_TILE_WIDTH)));
             int i = PS5_tilemap[y % PS5_TILE_HEIGHT][x % PS5_TILE_WIDTH];
             dst[t + i] = src[y * w + x];
         }
