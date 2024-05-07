@@ -74,6 +74,7 @@ static int PS5AUDIO_OpenDevice(_THIS, const char *devname)
     this->spec.format = test_format;
     this->spec.samples = PS5AUDIO_SampleSize(this->spec.samples);
     this->spec.freq = 48000;
+    this->spec.channels = this->spec.channels == 1 ? 1 : 2;
 
     /* Update the fragment size as size in bytes. */
     SDL_CalculateAudioSpec(&this->spec);
