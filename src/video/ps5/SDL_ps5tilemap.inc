@@ -1,8 +1,29 @@
-#define PS5_TILE_W 512
-#define PS5_TILE_H 128
-#define PS5_TILE_S (PS5_TILE_W * PS5_TILE_H)
+/*
+  Simple DirectMedia Layer
+  Copyright (C) 1997-2018 Sam Lantinga <slouken@libsdl.org>
 
-unsigned short PS5_tilemap[PS5_TILE_H][PS5_TILE_W] = {
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+*/
+
+#define PS5_TILE_WIDTH  512
+#define PS5_TILE_HEIGHT 128
+#define PS5_TILE_SIZE   (PS5_TILE_WIDTH * PS5_TILE_HEIGHT)
+
+unsigned short PS5_tilemap[PS5_TILE_HEIGHT][PS5_TILE_WIDTH] = {
     {0,     1,     2,     3,     32,    33,    34,    35,    64,    65,
      66,    67,    96,    97,    98,    99,    2176,  2177,  2178,  2179,
      2208,  2209,  2210,  2211,  2240,  2241,  2242,  2243,  2272,  2273,
