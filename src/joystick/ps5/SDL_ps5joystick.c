@@ -127,14 +127,16 @@ static void PS5_JoystickUpdate(SDL_Joystick *joystick)
 
 static SDL_JoystickGUID PS5_JoystickGetDeviceGUID(int device_index)
 {
-    SDL_JoystickGUID guid;
+    SDL_JoystickGUID guid = {0};
+
+    if(device_index < 0 || device_index >= SDL_arraysize(pad_ctx)) {
+        return guid;
+    }
 
     // TODO
-    SDL_zero(guid);
 
     return guid;
 }
-
 
 static void PS5_JoystickDetect(void)
 {
@@ -157,7 +159,7 @@ static int PS5_JoystickGetCount(void)
     int n = 0;
 
     for(int i=0; i<SDL_arraysize(pad_ctx); i++) {
-        n += (pad_ctx[i].user_id >= 0);
+        n += (pad_ctx[i].user_id != -1);
     }
   
     return n;
