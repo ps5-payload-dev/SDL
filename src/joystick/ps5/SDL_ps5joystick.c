@@ -30,8 +30,16 @@
 
 #include "SDL_ps5joystick.h"
 
-static int user_ids[4];
-static unsigned int buttons = 0;
+#define PS5_MAX_USERS 4
+
+typedef struct PS5_PadContext {
+  int user_id;
+  int handle;
+  SDL_JoystickID instance_id;
+  PS5_PadData pad;
+} PS5_PadContext;
+
+static PS5_PadContext pad_ctx[PS5_MAX_USERS];
 
 static const unsigned int btn_map[] = {
   PS5_PAD_BUTTON_CROSS,     // a:b0
@@ -39,6 +47,7 @@ static const unsigned int btn_map[] = {
   PS5_PAD_BUTTON_SQUARE,    // x:b2
   PS5_PAD_BUTTON_TRIANGLE,  // y:b3
   PS5_PAD_BUTTON_OPTIONS,   // back:b4
+  -1,                       // guide:b5
   PS5_PAD_BUTTON_TOUCH_PAD, // start:b6
   PS5_PAD_BUTTON_L3,        // leftstick:b7
   PS5_PAD_BUTTON_R3,        // rightstick:b8
@@ -54,54 +63,66 @@ static const unsigned int btn_map[] = {
 
 static SDL_JoystickID PS5_JoystickGetDeviceInstanceID(int device_index)
 {
-    return device_index;
+    if(device_index < 0 || device_index >= SDL_arraysize(pad_ctx)) {
+        return -1;
+    }
+
+    return pad_ctx[device_index].instance_id;
 }
 
-static const char *PS5_JoystickGetDeviceName(int index)
+static const char *PS5_JoystickGetDeviceName(int device_index)
 {
+    if(device_index < 0 || device_index >= SDL_arraysize(pad_ctx)) {
+        return NULL;
+    }
+
     return "Sony DualSense";
 }
 
 static void PS5_JoystickUpdate(SDL_Joystick *joystick)
 {
-    int handle = (int) SDL_JoystickInstanceID(joystick);
-    unsigned int btn_change;
+    SDL_JoystickID instance_id = SDL_JoystickInstanceID(joystick);
+    PS5_PadContext *ctx = NULL;
+    uint32_t btn_change;
     PS5_PadData pad;
 
-    if (scePadReadState(handle, &pad) != 0) {
-        SDL_SetError("scePadReadState: %s\n", strerror(errno));
-        return;
+    for (int i=0; i<SDL_arraysize(pad_ctx); i++) {
+        if (instance_id == pad_ctx[i].instance_id) {
+	    ctx = &pad_ctx[i];
+	    break;
+	}
     }
 
-    btn_change = buttons ^ pad.buttons;
+    if(!ctx || instance_id < 0) {
+        SDL_SetError("PS5_JoystickUpdate: instance not connected");
+	return;
+    }
+    
+    switch(scePadReadState(ctx->handle, &pad)) {
+    case 0:
+      break;
+
+      // TODO: on disconnect
+      
+    default:
+      SDL_SetError("scePadReadState: %s", strerror(errno));
+      return;
+    }
+
+    btn_change = ctx->pad.buttons ^ pad.buttons;
     if(btn_change) {
       for (int i=0; i<SDL_arraysize(btn_map); i++) {
 	if (btn_change & btn_map[i]) {
-
-	  if(pad.buttons & btn_map[i]) {
+	  if (pad.buttons & btn_map[i]) {
 	    SDL_PrivateJoystickButton(joystick, i, SDL_PRESSED);
 	  } else {
 	    SDL_PrivateJoystickButton(joystick, i, SDL_RELEASED);
 	  }
 	}
       }
-      buttons = pad.buttons;
     }
-}
 
-static void PS5_JoystickClose(SDL_Joystick *joystick)
-{
-    int handle = (int) SDL_JoystickInstanceID(joystick);
-
-    if(scePadClose(handle) != 0) {
-        SDL_SetError("scePadClose: %s\n", strerror(errno));
-	return;
-    }
-}
-
-static void PS5_JoystickQuit(void)
-{
-    //NOP
+    memcpy(&ctx->pad, &pad, sizeof(pad));
 }
 
 static SDL_JoystickGUID PS5_JoystickGetDeviceGUID(int device_index)
@@ -117,52 +138,101 @@ static SDL_JoystickGUID PS5_JoystickGetDeviceGUID(int device_index)
 
 static void PS5_JoystickDetect(void)
 {
-  // TODO
+    int user_ids[PS5_MAX_USERS];
+
+    if (sceUserServiceGetLoginUserIdList(user_ids) != 0) {
+        SDL_SetError("sceUserServiceGetLoginUserIdList: %s", strerror(errno));
+	return;
+    }
+
+    for (int i=0; i<PS5_MAX_USERS; i++) {
+        if(user_ids[i] != -1 && pad_ctx[i].user_id == -1) {
+	    pad_ctx[i].user_id = user_ids[i];
+	}
+    }
 }
 
 static int PS5_JoystickGetCount(void)
 {
-  return 1; // TODO
-}
+    int n = 0;
 
+    for(int i=0; i<SDL_arraysize(pad_ctx); i++) {
+        n += (pad_ctx[i].user_id >= 0);
+    }
+  
+    return n;
+}
 
 static int PS5_JoystickOpen(SDL_Joystick *joystick, int device_index)
 {
-    int handle;
-
-    handle = scePadOpen(user_ids[device_index], 0, 0, NULL);
-    if(handle < 0) {
-      SDL_SetError("scePadOpen: %s\n", strerror(errno));
-      return -1;
+    if (device_index < 0 || device_index >= SDL_arraysize(pad_ctx)) {
+        return SDL_SetError("PS5_JoystickOpen: Invalid device index");
     }
+    
+    pad_ctx[device_index].handle = scePadOpen(pad_ctx[device_index].user_id,
+					      0, 0, NULL);
+    if(pad_ctx[device_index].handle < 0) {
+      return SDL_SetError("scePadOpen: %s", strerror(errno));
+    }
+
+    pad_ctx[device_index].instance_id++;
 
     joystick->nbuttons = SDL_arraysize(btn_map);
     joystick->naxes = 6;
     joystick->nhats = 1;
-    joystick->instance_id = handle;
+    joystick->instance_id = pad_ctx[device_index].instance_id;
 
     return 0;
 }
 
+static void PS5_JoystickClose(SDL_Joystick *joystick)
+{
+    SDL_JoystickID instance_id = SDL_JoystickInstanceID(joystick);
+    PS5_PadContext *ctx = NULL;
+
+    for (int i=0; i<SDL_arraysize(pad_ctx); i++) {
+        if (instance_id == pad_ctx[i].instance_id) {
+	    ctx = &pad_ctx[i];
+	    break;
+	}
+    }
+
+    if(!ctx || instance_id < 0) {
+	return;
+    }
+    
+    if(scePadClose(ctx->handle) != 0) {
+        SDL_SetError("scePadClose: %s", strerror(errno));
+	//return;
+    }
+
+    ctx->handle = -1;
+}
 
 static int PS5_JoystickInit(void)
 {
-    memset(user_ids, 0xff, sizeof(user_ids));
-
-    if(sceUserServiceInitialize(0) != 0) {
-        return SDL_SetError("sceUserServiceInitialize: %s\n", strerror(errno));
+    for(int i=0; i<SDL_arraysize(pad_ctx); i++) {
+        pad_ctx[i].user_id = -1;
+	pad_ctx[i].handle = -1;
+	pad_ctx[i].instance_id = -1;
     }
 
-    if (sceUserServiceGetLoginUserIdList(user_ids) != 0) {
-        return SDL_SetError("sceUserServiceGetLoginUserIdList: %s\n",
-			    strerror(errno));
+    if(sceUserServiceInitialize(0) != 0) {
+        return SDL_SetError("sceUserServiceInitialize: %s", strerror(errno));
     }
 
     if (scePadInit() != 0) {
-        return SDL_SetError("scePadInit: %s\n", strerror(errno));
+        return SDL_SetError("scePadInit: %s", strerror(errno));
     }
 
-    return 0;
+    PS5_JoystickDetect();
+
+    return PS5_JoystickGetCount() > 0 ? 0 : -1;
+}
+
+static void PS5_JoystickQuit(void)
+{
+    //NOP
 }
 
 //
