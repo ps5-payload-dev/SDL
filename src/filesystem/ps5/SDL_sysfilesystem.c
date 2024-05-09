@@ -25,19 +25,46 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* System dependent filesystem routines                                */
 
+#include <string.h>
+#include <limits.h>
+#include <unistd.h>
+
 #include <sys/stat.h>
 
 #include "SDL_error.h"
 #include "SDL_stdinc.h"
 #include "SDL_filesystem.h"
 
+const char** getargv(void);
+
 char *SDL_GetBasePath(void)
 {
-    char *retval = SDL_strdup("/");
-    if (!retval) {
-        SDL_OutOfMemory();
+    const char** argv = getargv();
+    char dirname[PATH_MAX];
+
+    if (!argv || !argv[0] || !strstr(argv[0], "/")) {
+      return strdup("/data/");
     }
-    return retval;
+
+    if (!getcwd(dirname, sizeof(dirname))) {
+        dirname[0] = 0;
+    }
+
+    if (argv[0][0] != '/') {
+        strcat(dirname, "/");
+	strcat(dirname, argv[0]);
+    } else {
+        strcpy(dirname, argv[0]);
+    }
+
+    for (int i=strlen(dirname); i>0; i--) {
+        if (dirname[i-1] == '/') {
+            dirname[i] = 0;
+            break;
+        }
+    }
+
+    return strdup(dirname);
 }
 
 char *SDL_GetPrefPath(const char *org, const char *app)
