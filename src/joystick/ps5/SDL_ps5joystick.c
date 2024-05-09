@@ -49,7 +49,7 @@ typedef struct PS5_PadContext
 
 static PS5_PadContext pad_ctx[PS5_MAX_USERS];
 
-// Map analog inputs to -32768 -> 32767
+// Map analog inputs from [0, 255] to [-32768, 32767]
 static int analog_map[256] = {
     -32767, -32759, -32742, -32712, -32671, -32618, -32553, -32478, -32392,
     -32296, -32188, -32071, -31944, -31806, -31659, -31502, -31336, -31161,
