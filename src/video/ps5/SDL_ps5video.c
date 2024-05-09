@@ -73,17 +73,14 @@ static int PS5_CreateWindowFramebuffer(_THIS, SDL_Window *window,
 
 static void PS5_DrawPixelsAsTiles(uint32_t *src, uint32_t *dst)
 {
-    int w = (PS5_SCREEN_WIDTH + 0x4f) & ~0x4f;
-    int h = (PS5_SCREEN_HEIGHT + 0x4f) & ~0x4f;
-
-    for (int y = 0; y < h; y++) {
+    for (int y = 0; y < PS5_SCREEN_HEIGHT; y++) {
         int ty = y / PS5_TILE_HEIGHT;
-        for (int x = 0; x < w; x++) {
+        for (int x = 0; x < PS5_SCREEN_WIDTH; x++) {
             int tx = x / PS5_TILE_WIDTH;
-            int t = (int)(PS5_TILE_SIZE *
-                          (tx + ty * ((double)w / PS5_TILE_WIDTH)));
+            int t = (int)(PS5_TILE_SIZE * (tx + ty * ((double)PS5_SCREEN_WIDTH /
+						      PS5_TILE_WIDTH)));
             int i = PS5_tilemap[y % PS5_TILE_HEIGHT][x % PS5_TILE_WIDTH];
-            dst[t + i] = src[y * w + x];
+            dst[t + i] = src[y * PS5_SCREEN_WIDTH + x];
         }
     }
 }
@@ -171,8 +168,8 @@ static int PS5_VideoInit(_THIS)
 
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_ABGR8888;
-    mode.w = (PS5_SCREEN_WIDTH + 0x4f) & ~0x4f;
-    mode.h = (PS5_SCREEN_HEIGHT + 0x4f) & ~0x4f;
+    mode.w = PS5_SCREEN_WIDTH;
+    mode.h = PS5_SCREEN_HEIGHT;
     mode.refresh_rate = 60;
     mode.driverdata = NULL;
 
