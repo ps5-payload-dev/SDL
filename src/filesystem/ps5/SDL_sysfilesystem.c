@@ -28,6 +28,7 @@
 #include <string.h>
 #include <limits.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <sys/stat.h>
 
@@ -35,7 +36,12 @@
 #include "SDL_stdinc.h"
 #include "SDL_filesystem.h"
 
+
 const char** getargv(void);
+
+int sceUserServiceInitialize(void*);
+int sceUserServiceGetForegroundUser(uint32_t *user_id);
+
 
 char *SDL_GetBasePath(void)
 {
@@ -67,12 +73,15 @@ char *SDL_GetBasePath(void)
     return strdup(dirname);
 }
 
+static int first_run = 1;
+
 char *SDL_GetPrefPath(const char *org, const char *app)
 {
-    const char *envr = "/data/";
-    char *retval = NULL;
-    char *ptr = NULL;
+    char envr[PATH_MAX];
+    uint32_t user_id;
+    char *retval = 0;
     size_t len = 0;
+    char *ptr = 0;
 
     if (!app) {
         SDL_InvalidParamError("app");
@@ -82,6 +91,17 @@ char *SDL_GetPrefPath(const char *org, const char *app)
         org = "";
     }
 
+    if (first_run) {
+        if (sceUserServiceInitialize(0)) {
+            SDL_SetError("sceUserServiceInitialize: %s", strerror(errno));
+        }
+        first_run = 0;
+    }
+    if (sceUserServiceGetForegroundUser(&user_id)) {
+        strcpy(envr, "/data/");
+    } else {
+        sprintf(envr, "/user/home/%04x/", user_id);
+    }
     len = SDL_strlen(envr);
 
     len += SDL_strlen(org) + SDL_strlen(app) + 3;
