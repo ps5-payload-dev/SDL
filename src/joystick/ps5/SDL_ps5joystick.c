@@ -226,6 +226,9 @@ static void PS5_JoystickUpdate(SDL_Joystick *joystick)
     btn_change = ctx->pad.buttons ^ pad.buttons;
     if (btn_change) {
         for (int i = 0; i < SDL_arraysize(btn_map); i++) {
+            if(btn_map[i] == -1) {
+                continue;
+            }
             if (btn_change & btn_map[i]) {
                 if (pad.buttons & btn_map[i]) {
                     SDL_PrivateJoystickButton(joystick, i, SDL_PRESSED);
