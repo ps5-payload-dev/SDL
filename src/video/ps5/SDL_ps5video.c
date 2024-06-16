@@ -27,6 +27,7 @@
 
 #include "SDL_ps5tilemap.inc"
 #include "SDL_ps5video.h"
+#include "SDL_ps5keyboard.h"
 
 #define PS5_SURFACE "_PS5_Surface"
 
@@ -213,6 +214,7 @@ static void PS5_DestroyWindow(_THIS, SDL_Window *window)
 
 static void PS5_PumpEvents(_THIS)
 {
+    PS5_Keyboard_PumpEvents();
 }
 
 static SDL_VideoDevice *PS5_CreateDevice(void)
@@ -231,6 +233,9 @@ static SDL_VideoDevice *PS5_CreateDevice(void)
         SDL_OutOfMemory();
         return NULL;
     }
+
+    PS5_Keyboard_Init();
+    PS5_Keyboard_Open();
 
     device->VideoInit = PS5_VideoInit;
     device->VideoQuit = PS5_VideoQuit;
