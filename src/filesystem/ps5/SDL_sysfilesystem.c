@@ -73,7 +73,6 @@ char *SDL_GetBasePath(void)
     return strdup(dirname);
 }
 
-static int first_run = 1;
 
 char *SDL_GetPrefPath(const char *org, const char *app)
 {
@@ -82,6 +81,7 @@ char *SDL_GetPrefPath(const char *org, const char *app)
     char *retval = 0;
     size_t len = 0;
     char *ptr = 0;
+    int err;
 
     if (!app) {
         SDL_InvalidParamError("app");
@@ -91,11 +91,9 @@ char *SDL_GetPrefPath(const char *org, const char *app)
         org = "";
     }
 
-    if (first_run) {
-        if (sceUserServiceInitialize(0)) {
-            SDL_SetError("sceUserServiceInitialize: %s", strerror(errno));
-        }
-        first_run = 0;
+    err = sceUserServiceInitialize(0);
+    if (err != 0 && err != 0x80960003) {
+        SDL_SetError("sceUserServiceInitialize: 0x%08x", err);
     }
     if (sceUserServiceGetForegroundUser(&user_id)) {
         strcpy(envr, "/data/");
