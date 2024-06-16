@@ -318,6 +318,7 @@ static void PS5_JoystickClose(SDL_Joystick *joystick)
 {
     SDL_JoystickID instance_id = SDL_JoystickInstanceID(joystick);
     PS5_PadContext *ctx = NULL;
+    int err;
 
     for (int i = 0; i < SDL_arraysize(pad_ctx); i++) {
         if (instance_id == pad_ctx[i].instance_id) {
@@ -330,9 +331,9 @@ static void PS5_JoystickClose(SDL_Joystick *joystick)
         return;
     }
 
-    if (scePadClose(ctx->handle) != 0) {
-        SDL_SetError("scePadClose: %s", strerror(errno));
-        // return;
+    err = scePadClose(ctx->handle);
+    if (err != 0) {
+        SDL_SetError("scePadClose: 0x%08x", err);
     }
 
     ctx->handle = -1;
@@ -340,18 +341,22 @@ static void PS5_JoystickClose(SDL_Joystick *joystick)
 
 static int PS5_JoystickInit(void)
 {
+    int err;
+
     for (int i = 0; i < SDL_arraysize(pad_ctx); i++) {
         pad_ctx[i].user_id = -1;
         pad_ctx[i].handle = -1;
         pad_ctx[i].instance_id = -1;
     }
 
-    if (sceUserServiceInitialize(0) != 0) {
-        return SDL_SetError("sceUserServiceInitialize: %s", strerror(errno));
+    err = sceUserServiceInitialize(0);
+    if (err != 0 && err != 0x80960003) {
+        return SDL_SetError("sceUserServiceInitialize: 0x%08x", err);
     }
 
-    if (scePadInit() != 0) {
-        return SDL_SetError("scePadInit: %s", strerror(errno));
+    err = scePadInit();
+    if (err != 0) {
+        return SDL_SetError("scePadInit: 0x%08x", err);
     }
 
     PS5_JoystickDetect();
