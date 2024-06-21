@@ -43,6 +43,8 @@ typedef struct PS5_PadContext
 {
     int user_id;
     int handle;
+    char* name;
+    SDL_JoystickGUID global_id;
     SDL_JoystickID instance_id;
     PS5_PadData pad;
 } PS5_PadContext;
@@ -114,7 +116,7 @@ static const char *PS5_JoystickGetDeviceName(int device_index)
         return NULL;
     }
 
-    return "Sony DualSense";
+    return pad_ctx[device_index].name;
 }
 
 static SDL_bool PS5_JoystickGetGamepadMapping(int device_index, SDL_GamepadMapping *out)
@@ -263,9 +265,7 @@ static SDL_JoystickGUID PS5_JoystickGetDeviceGUID(int device_index)
         return guid;
     }
 
-    // TODO
-
-    return guid;
+    return pad_ctx[device_index].global_id;
 }
 
 static void PS5_JoystickDetect(void)
@@ -297,6 +297,8 @@ static int PS5_JoystickGetCount(void)
 
 static int PS5_JoystickOpen(SDL_Joystick *joystick, int device_index)
 {
+    const char name[] = "Sony DualSense";
+
     if (device_index < 0 || device_index >= SDL_arraysize(pad_ctx)) {
         return SDL_SetError("PS5_JoystickOpen: Invalid device index");
     }
@@ -307,7 +309,13 @@ static int PS5_JoystickOpen(SDL_Joystick *joystick, int device_index)
         return SDL_SetError("scePadOpen: %s", strerror(errno));
     }
 
+    if (pad_ctx[device_index].name) {
+        free(pad_ctx[device_index].name);
+    }
+
     pad_ctx[device_index].instance_id++;
+    pad_ctx[device_index].global_id = SDL_CreateJoystickGUIDForName(name);
+    pad_ctx[device_index].name = strdup(name);
 
     joystick->nbuttons = SDL_arraysize(btn_map);
     joystick->naxes = 6;
@@ -339,7 +347,12 @@ static void PS5_JoystickClose(SDL_Joystick *joystick)
         SDL_SetError("scePadClose: 0x%08x", err);
     }
 
+    if (ctx->name) {
+        free(ctx->name);
+    }
+
     ctx->handle = -1;
+    ctx->name = 0;
 }
 
 static int PS5_JoystickInit(void)
@@ -349,7 +362,9 @@ static int PS5_JoystickInit(void)
     for (int i = 0; i < SDL_arraysize(pad_ctx); i++) {
         pad_ctx[i].user_id = -1;
         pad_ctx[i].handle = -1;
+        pad_ctx[i].name = 0;
         pad_ctx[i].instance_id = -1;
+        pad_ctx[i].global_id = (SDL_JoystickGUID){0};
     }
 
     err = sceUserServiceInitialize(0);
