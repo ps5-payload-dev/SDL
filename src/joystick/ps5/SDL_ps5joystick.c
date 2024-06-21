@@ -116,7 +116,11 @@ static const char *PS5_JoystickGetDeviceName(int device_index)
         return NULL;
     }
 
-    return pad_ctx[device_index].name;
+    if (pad_ctx[device_index].name) {
+        return pad_ctx[device_index].name;
+    } else {
+        return "";
+    }
 }
 
 static SDL_bool PS5_JoystickGetGamepadMapping(int device_index, SDL_GamepadMapping *out)
