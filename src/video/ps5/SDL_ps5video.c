@@ -143,12 +143,52 @@ static int PS5_UpdateWindowFramebuffer(_THIS, SDL_Window *window,
 
 static void PS5_GetDisplayModes(_THIS, SDL_VideoDisplay * display)
 {
+    SDL_DisplayMode mode;
+
+    SDL_zero(mode);
+    mode.format = SDL_PIXELFORMAT_ABGR8888;
+    mode.w = 3840;
+    mode.h = 2160;
+    mode.refresh_rate = 60;
+
     SDL_AddDisplayMode(display, &display->current_mode);
+    SDL_AddDisplayMode(display, &mode);
 }
 
 static int PS5_SetDisplayMode(_THIS, SDL_VideoDisplay * display,
                               SDL_DisplayMode * mode)
 {
+    PS5_DeviceData *device_data = (PS5_DeviceData *)_this->driverdata;
+    PS5_VideoAttr vattr = {0};
+
+    if(device_data->evt_queue) {
+        sceVideoOutDeleteFlipEvent(device_data->evt_queue, device_data->handle);
+        sceKernelDeleteEqueue(device_data->evt_queue);
+    }
+
+    if(device_data->handle >= 0) {
+        sceVideoOutClose(device_data->handle);
+    }
+    device_data->handle = sceVideoOutOpen(0xff, 0, 0, NULL);
+
+    if (sceKernelCreateEqueue(&device_data->evt_queue, "flip queue")) {
+        return SDL_SetError("sceKernelCreateEqueue: %s", strerror(errno));
+    }
+    if (sceVideoOutAddFlipEvent(device_data->evt_queue, device_data->handle, 0)) {
+        return SDL_SetError("sceVideoOutAddFlipEvent: %s", strerror(errno));
+    }
+    if (sceVideoOutSetFlipRate(device_data->handle, 0)) {
+        return SDL_SetError("sceVideoOutSetFlipRate: %s", strerror(errno));
+    }
+
+    sceVideoOutSetBufferAttribute2(&vattr, 0x8000000022000000UL, 0,
+                                   mode->w, mode->h, 0, 0, 0);
+
+    if (sceVideoOutRegisterBuffers2(device_data->handle, 0, 0,
+                                    device_data->vbuf, 2, &vattr, 0, NULL)) {
+        return SDL_SetError("sceVideoOutRegisterBuffers2: %s", strerror(errno));
+    }
+
     return 0;
 }
 
