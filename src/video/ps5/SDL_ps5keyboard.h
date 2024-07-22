@@ -23,10 +23,19 @@
 #ifndef SDL_ps5keyboard_h_
 #define SDL_ps5keyboard_h_
 
+#include "../SDL_sysvideo.h"
+
 int PS5_Keyboard_Init(void);
 int PS5_Keyboard_Open(void);
 int PS5_Keyboard_PumpEvents(void);
 int PS5_Keyboard_Close(void);
+
+SDL_bool PS5_HasScreenKeyboardSupport(_THIS);
+SDL_bool PS5_IsScreenKeyboardShown(_THIS, SDL_Window *window);
+
+void PS5_ShowScreenKeyboard(_THIS, SDL_Window *window);
+void PS5_HideScreenKeyboard(_THIS, SDL_Window *window);
+
 
 #endif /* SDL_ps5keyboard_h_ */
 

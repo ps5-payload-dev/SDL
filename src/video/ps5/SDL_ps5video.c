@@ -245,6 +245,10 @@ static SDL_VideoDevice *PS5_CreateDevice(void)
     device->CreateWindowFramebuffer = PS5_CreateWindowFramebuffer;
     device->UpdateWindowFramebuffer = PS5_UpdateWindowFramebuffer;
     device->DestroyWindowFramebuffer = PS5_DestroyWindowFramebuffer;
+    device->HasScreenKeyboardSupport = PS5_HasScreenKeyboardSupport;
+    device->ShowScreenKeyboard = PS5_ShowScreenKeyboard;
+    device->HideScreenKeyboard = PS5_HideScreenKeyboard;
+    device->IsScreenKeyboardShown = PS5_IsScreenKeyboardShown;
     device->free = PS5_DestroyDevice;
 
     return device;
