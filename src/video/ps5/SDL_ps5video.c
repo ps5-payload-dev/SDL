@@ -24,6 +24,7 @@
 #if SDL_VIDEO_DRIVER_PS5
 
 #include <errno.h>
+#include <pthread.h>
 
 #include "SDL_ps5tilemap.inc"
 #include "SDL_ps5video.h"
@@ -34,7 +35,7 @@
 #define PS5_THREAD_COUNT 12
 
 
-static int PS5_DrawTileThread(void* arg) {
+static void* PS5_DrawTileThread(void* arg) {
     const PS5_DrawChunk* chunk = (PS5_DrawChunk*)arg;
 
     for (int ind = chunk->src_start; ind < chunk->src_end; ind++) {
@@ -56,7 +57,7 @@ static void PS5_DrawPixelsAsTiles(uint32_t *src, uint32_t *dst,
 {
     int chunk_size = frame_width * frame_height / PS5_THREAD_COUNT;
     PS5_DrawChunk chunks[PS5_THREAD_COUNT];
-    SDL_Thread* threads[PS5_THREAD_COUNT];
+    pthread_t threads[PS5_THREAD_COUNT];
 
     for (int i=0; i<PS5_THREAD_COUNT; i++) {
         chunks[i].src = src;
@@ -70,12 +71,11 @@ static void PS5_DrawPixelsAsTiles(uint32_t *src, uint32_t *dst,
             chunks[i].src_end = frame_width * frame_height;
         }
 
-        threads[i] = SDL_CreateThread(PS5_DrawTileThread, "DrawTileThread",
-                                      &chunks[i]);
+        pthread_create(&threads[i], 0, &PS5_DrawTileThread, &chunks[i]);
     }
 
     for (int i=0; i<PS5_THREAD_COUNT; i++) {
-        SDL_WaitThread(threads[i], 0);
+        pthread_join(threads[i], 0);
     }
 }
 
