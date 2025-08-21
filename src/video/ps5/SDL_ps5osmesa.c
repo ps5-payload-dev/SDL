@@ -89,7 +89,7 @@ static int OSMesa_LoadLibrary(_THIS, const char *path)
 
 static void OSMesa_UnloadLibrary(_THIS)
 {
-    if(osmesa_lib) {
+    if (osmesa_lib) {
         dlclose(osmesa_lib);
     }
 
@@ -135,7 +135,7 @@ static SDL_GLContext OSMesa_CreateContext(_THIS, SDL_Window * window)
         return NULL;
     }
 
-    if(OSMesa_MakeCurrent(_this, window, ctx)) {
+    if (OSMesa_MakeCurrent(_this, window, ctx)) {
         return NULL;
     }
 

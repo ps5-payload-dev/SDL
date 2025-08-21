@@ -54,21 +54,21 @@ typedef struct SceImeDialogParam
 {
     int userId;
     enum {
-	SCE_IME_TYPE_DEFAULT,
-	SCE_IME_TYPE_BASIC_LATIN,
-	SCE_IME_TYPE_URL,
-	SCE_IME_TYPE_MAIL,
-	SCE_IME_TYPE_NUMBER
+    SCE_IME_TYPE_DEFAULT,
+    SCE_IME_TYPE_BASIC_LATIN,
+    SCE_IME_TYPE_URL,
+    SCE_IME_TYPE_MAIL,
+    SCE_IME_TYPE_NUMBER
     } type;
     uint64_t supportedLanguages;
     enum {
-	SCE_IME_ENTER_LABEL_DEFAULT,
-	SCE_IME_ENTER_LABEL_SEND,
-	SCE_IME_ENTER_LABEL_SEARCH,
-	SCE_IME_ENTER_LABEL_GO,
+    SCE_IME_ENTER_LABEL_DEFAULT,
+    SCE_IME_ENTER_LABEL_SEND,
+    SCE_IME_ENTER_LABEL_SEARCH,
+    SCE_IME_ENTER_LABEL_GO,
     } enterLabel;
     enum {
-	SCE_IME_INPUT_METHOD_DEFAULT
+    SCE_IME_INPUT_METHOD_DEFAULT
     } inputMethod;
     SceImeTextFilter filter;
     uint32_t option;
@@ -77,14 +77,14 @@ typedef struct SceImeDialogParam
     float posx;
     float posy;
     enum {
-	SCE_IME_HALIGN_LEFT,
-	SCE_IME_HALIGN_CENTER,
-	SCE_IME_HALIGN_RIGHT
+    SCE_IME_HALIGN_LEFT,
+    SCE_IME_HALIGN_CENTER,
+    SCE_IME_HALIGN_RIGHT
     } halign;
     enum {
-	SCE_IME_VALIGN_TOP,
-	SCE_IME_VALIGN_CENTER,
-	SCE_IME_VALIGN_BOTTOM
+    SCE_IME_VALIGN_TOP,
+    SCE_IME_VALIGN_CENTER,
+    SCE_IME_VALIGN_BOTTOM
     } valign;
     const wchar_t *placeholder;
     const wchar_t *title;
@@ -94,9 +94,9 @@ typedef struct SceImeDialogParam
 typedef struct SceImeDialogResult
 {
     enum {
-	SCE_IME_DIALOG_END_STATUS_OK,
-	SCE_IME_DIALOG_END_STATUS_USER_CANCELED,
-	SCE_IME_DIALOG_END_STATUS_ABORTED,
+    SCE_IME_DIALOG_END_STATUS_OK,
+    SCE_IME_DIALOG_END_STATUS_USER_CANCELED,
+    SCE_IME_DIALOG_END_STATUS_ABORTED,
     } outcome;
     int8_t reserved[12];
 } SceImeDialogResult;
@@ -178,7 +178,7 @@ int PS5_Keyboard_Init(void)
 
     err = sceKeyboardInit();
     if (err != 0) {
-        return SDL_SetError("scePadInit: 0x%08x", err);
+        return SDL_SetError("sceKeyboardInit: 0x%08x", err);
     }
 
     return 0;
@@ -190,43 +190,42 @@ static int PS5_ImeDialog_PumpEvents(void)
     SceImeDialogResult result = {0};
     char text[0x800];
 
-    if(g_ime_dialog_status == status) {
-	return 0;
-    } else {
-	g_ime_dialog_status = status;
+    if (g_ime_dialog_status == status) {
+        return 0;
     }
+    g_ime_dialog_status = status;
 
-    switch(status) {
+    switch (status) {
     case SCE_IME_DIALOG_STATUS_NONE:
-	return 0;
+        return 0;
 
     case SCE_IME_DIALOG_STATUS_RUNNING:
-	return 0;
+        return 0;
 
     case SCE_IME_DIALOG_STATUS_FINISHED:
-	break;
+        break;
 
     default:
-	return -1;
+        return -1;
     }
 
-    if(sceImeDialogGetResult(&result)) {
-	return -1;
+    if (sceImeDialogGetResult(&result)) {
+        return -1;
     }
 
-    switch(result.outcome) {
+    switch (result.outcome) {
     case SCE_IME_DIALOG_END_STATUS_OK:
-      if(wcstombs(text, g_ime_dialog_text, sizeof(text)) >= 0) {
-	SDL_SendKeyboardText(text);
-      }
-      SDL_SendKeyboardKeyAutoRelease(SDL_SCANCODE_RETURN);
-      break;
+        if (wcstombs(text, g_ime_dialog_text, sizeof(text)) >= 0) {
+            SDL_SendKeyboardText(text);
+        }
+        SDL_SendKeyboardKeyAutoRelease(SDL_SCANCODE_RETURN);
+        break;
 
     case SCE_IME_DIALOG_END_STATUS_USER_CANCELED:
     case SCE_IME_DIALOG_END_STATUS_ABORTED:
-	break;
+        break;
     default:
-	return -1;
+        return -1;
     }
 
     sceImeDialogTerm();
@@ -345,14 +344,14 @@ void PS5_ShowScreenKeyboard(_THIS, SDL_Window *window)
 
 void PS5_HideScreenKeyboard(_THIS, SDL_Window *window)
 {
-    if(g_ime_dialog_status == SCE_IME_DIALOG_STATUS_FINISHED) {
-      sceImeDialogTerm();
+    if (g_ime_dialog_status == SCE_IME_DIALOG_STATUS_FINISHED) {
+        sceImeDialogTerm();
     }
 }
 
 SDL_bool PS5_IsScreenKeyboardShown(_THIS, SDL_Window *window)
 {
-    if(g_ime_dialog_status == SCE_IME_DIALOG_STATUS_RUNNING) {
+    if (g_ime_dialog_status == SCE_IME_DIALOG_STATUS_RUNNING) {
         return SDL_TRUE;
     }
 
