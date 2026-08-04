@@ -88,9 +88,9 @@ static const unsigned int btn_map[] = {
     PS5_PAD_BUTTON_CIRCLE,    // b:b1
     PS5_PAD_BUTTON_SQUARE,    // x:b2
     PS5_PAD_BUTTON_TRIANGLE,  // y:b3
-    PS5_PAD_BUTTON_OPTIONS,   // back:b4
-    -1,                       // guide:b5
-    PS5_PAD_BUTTON_TOUCH_PAD, // start:b6
+    PS5_PAD_BUTTON_TOUCH_PAD, // touchpad:b4
+    -1,                       // back:b5
+    PS5_PAD_BUTTON_OPTIONS,   // start:b6
     PS5_PAD_BUTTON_L3,        // leftstick:b7
     PS5_PAD_BUTTON_R3,        // rightstick:b8
     PS5_PAD_BUTTON_L1,        // leftshoulder:b9
@@ -143,10 +143,10 @@ static SDL_bool PS5_JoystickGetGamepadMapping(int device_index, SDL_GamepadMappi
     out->x.target = 2;
     out->y.kind = EMappingKind_Button;
     out->y.target = 3;
-    out->back.kind = EMappingKind_Button;
-    out->back.target = 4;
-    // out->guide.kind = EMappingKind_Button;
-    // out->guide.target = 5;
+    out->touchpad.kind = EMappingKind_Button;
+    out->touchpad.target = 4;
+    // out->back.kind = EMappingKind_Button;
+    // out->back.target = 5;
     out->start.kind = EMappingKind_Button;
     out->start.target = 6;
     out->leftstick.kind = EMappingKind_Button;
