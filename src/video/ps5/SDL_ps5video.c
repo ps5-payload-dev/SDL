@@ -128,15 +128,8 @@ static int PS5_SetDisplayMode(_THIS, SDL_VideoDisplay * display,
 {
     PS5_DeviceData *device_data = (PS5_DeviceData *)_this->driverdata;
     PS5_VideoAttr vattr = {0};
-
-    if(device_data->tmap) {
-        PS5_Tilemap_Destroy(device_data->tmap);
-    }
-
-    device_data->tmap = PS5_Tilemap_Create(mode->w, mode->h);
-    if(!device_data->tmap) {
-        return SDL_SetError("PS5_Tilemap_Create: %s", strerror(errno));
-    }
+    SDL_Surface *surface;
+    PS5_Tilemap *tmap;
 
     if(device_data->evt_queue) {
         sceVideoOutDeleteFlipEvent(device_data->evt_queue, device_data->handle);
@@ -165,6 +158,23 @@ static int PS5_SetDisplayMode(_THIS, SDL_VideoDisplay * display,
                                     device_data->vbuf, 2, &vattr, 0, NULL)) {
         return SDL_SetError("sceVideoOutRegisterBuffers2: %s", strerror(errno));
     }
+
+    surface = SDL_CreateRGBSurfaceWithFormat(0, mode->w, mode->h, 32,
+                                             mode->format);
+    if(!surface) {
+        return -1;
+    }
+
+    tmap = PS5_Tilemap_Create(mode->w, mode->h);
+    if(!tmap) {
+        SDL_FreeSurface(surface);
+        return SDL_OutOfMemory();
+    }
+
+    SDL_FreeSurface(device_data->surface);
+    PS5_Tilemap_Destroy(device_data->tmap);
+    device_data->surface = surface;
+    device_data->tmap = tmap;
 
     return 0;
 }
