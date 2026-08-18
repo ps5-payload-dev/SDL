@@ -24,59 +24,10 @@
 #ifdef SDL_VIDEO_DRIVER_PS5
 
 #include <errno.h>
-#include <pthread.h>
 
-#include "SDL_ps5tilemap.inc"
 #include "SDL_ps5video.h"
 #include "SDL_ps5keyboard.h"
 #include "SDL_ps5osmesa.h"
-
-#define PS5_THREAD_COUNT 12
-
-
-static void* PS5_DrawTileThread(void* arg) {
-    const PS5_DrawChunk* chunk = (PS5_DrawChunk*)arg;
-
-    for (int ind = chunk->src_start; ind < chunk->src_end; ind++) {
-        int x = ind % chunk->frame_width;
-        int y = ind / chunk->frame_width;
-        int ty = y / PS5_TILE_HEIGHT;
-        int tx = x / PS5_TILE_WIDTH;
-
-        int t = (int)(PS5_TILE_SIZE * (tx + ty * ((double)chunk->frame_width /
-                                                  PS5_TILE_WIDTH)));
-        int i = PS5_tilemap[y % PS5_TILE_HEIGHT][x % PS5_TILE_WIDTH];
-        chunk->dst[t + i] = chunk->src[ind];
-    }
-    return 0;
-}
-
-static void PS5_DrawPixelsAsTiles(uint32_t *src, uint32_t *dst,
-                                  int frame_width, int frame_height)
-{
-    int chunk_size = frame_width * frame_height / PS5_THREAD_COUNT;
-    PS5_DrawChunk chunks[PS5_THREAD_COUNT];
-    pthread_t threads[PS5_THREAD_COUNT];
-
-    for (int i=0; i<PS5_THREAD_COUNT; i++) {
-        chunks[i].src = src;
-        chunks[i].dst = dst;
-        chunks[i].src_start = i * chunk_size;
-        chunks[i].src_end = (i + 1) * chunk_size;
-        chunks[i].frame_width = frame_width;
-        chunks[i].frame_height = frame_height;
-
-        if(i == PS5_THREAD_COUNT - 1) {
-            chunks[i].src_end = frame_width * frame_height;
-        }
-
-        pthread_create(&threads[i], 0, &PS5_DrawTileThread, &chunks[i]);
-    }
-
-    for (int i=0; i<PS5_THREAD_COUNT; i++) {
-        pthread_join(threads[i], 0);
-    }
-}
 
 static void PS5_DestroyWindowFramebuffer(_THIS, SDL_Window *window)
 {
@@ -129,17 +80,21 @@ static int PS5_UpdateWindowFramebuffer(_THIS, SDL_Window *window,
 
     if(surface->w == device_data->surface->w &&
        surface->h == device_data->surface->h) {
-        PS5_DrawPixelsAsTiles(surface->pixels, device_data->vbuf[idx].data,
-                              surface->w, surface->h);
+        PS5_Tilemap_Blit(device_data->tmap, surface->pixels, surface->pitch / 4,
+                         device_data->vbuf[idx].data,
+                         idx, rects, numrects, 0, 0);
     } else {
         SDL_BlitSurface(surface, NULL, device_data->surface,
                         &(SDL_Rect){(device_data->surface->w - surface->w) / 2,
                                     (device_data->surface->h - surface->h) / 2,
                                     surface->w, surface->h});
-        PS5_DrawPixelsAsTiles(device_data->surface->pixels,
-                              device_data->vbuf[idx].data,
-                              device_data->surface->w,
-                              device_data->surface->h);
+        PS5_Tilemap_Blit(device_data->tmap,
+                         device_data->surface->pixels,
+                         device_data->surface->pitch / 4,
+                         device_data->vbuf[idx].data,
+                         idx, rects, numrects,
+                         (device_data->surface->w - surface->w) / 2,
+                         (device_data->surface->h - surface->h) / 2);
     }
 
     if (sceVideoOutSubmitFlip(device_data->handle, idx, 1, frame_id)) {
@@ -173,6 +128,15 @@ static int PS5_SetDisplayMode(_THIS, SDL_VideoDisplay * display,
 {
     PS5_DeviceData *device_data = (PS5_DeviceData *)_this->driverdata;
     PS5_VideoAttr vattr = {0};
+
+    if(device_data->tmap) {
+        PS5_Tilemap_Destroy(device_data->tmap);
+    }
+
+    device_data->tmap = PS5_Tilemap_Create(mode->w, mode->h);
+    if(!device_data->tmap) {
+        return SDL_SetError("PS5_Tilemap_Create: %s", strerror(errno));
+    }
 
     if(device_data->evt_queue) {
         sceVideoOutDeleteFlipEvent(device_data->evt_queue, device_data->handle);
@@ -267,6 +231,11 @@ static int PS5_VideoInit(_THIS)
     display.desktop_mode = mode;
     display.current_mode = mode;
 
+    device_data->tmap = PS5_Tilemap_Create(mode.w, mode.h);
+    if(!device_data->tmap) {
+        return SDL_SetError("PS5_Tilemap_Create: %s", strerror(errno));
+    }
+
     SDL_AddVideoDisplay(&display, SDL_FALSE);
 
     return 0;
@@ -288,6 +257,11 @@ static void PS5_VideoQuit(_THIS)
     }
     if (device_data->evt_queue) {
         sceKernelDeleteEqueue(device_data->evt_queue);
+    }
+
+    if (device_data->tmap != 0) {
+        PS5_Tilemap_Destroy(device_data->tmap);
+        device_data->tmap = 0;
     }
 }
 

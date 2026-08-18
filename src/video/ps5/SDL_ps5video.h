@@ -27,11 +27,12 @@
 
 #include "../SDL_sysvideo.h"
 
+#include "SDL_ps5tilemap.h"
+
 typedef struct PS5_VideoBuf {
     void *data;
     uint64_t junk0[3];
 } PS5_VideoBuf;
-
 
 typedef struct PS5_VideoAttr {
     uint8_t junk0[80];
@@ -45,19 +46,8 @@ typedef struct PS5_DeviceData
     intptr_t paddr;
     size_t memsize;
     SDL_Surface *surface;
+    PS5_Tilemap* tmap;
 } PS5_DeviceData;
-
-typedef struct PS5_DrawChunk {
-    uint32_t *src;
-    uint32_t *dst;
-
-    uint16_t frame_width;
-    uint16_t frame_height;
-
-    size_t src_start;
-    size_t src_end;
-} PS5_DrawChunk;
-
 
 int sceSystemServiceHideSplashScreen(void);
 
