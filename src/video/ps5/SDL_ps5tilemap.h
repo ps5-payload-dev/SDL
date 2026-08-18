@@ -22,16 +22,19 @@
 #ifndef SDL_ps5tilemap_h_
 #define SDL_ps5tilemap_h_
 
+#include "SDL_rect.h"
+#include "SDL_stdinc.h"
+
 typedef struct PS5_Tilemap PS5_Tilemap;
 
-PS5_Tilemap* PS5_Tilemap_Create(int width, int height);
+PS5_Tilemap* PS5_Tilemap_Create(Uint32 width, Uint32 height);
 
 void PS5_Tilemap_Blit(PS5_Tilemap *tmap, const void *pixels, int pitch,
 		      void *tiled, int buf_idx,
 		      const SDL_Rect *rects, int numrects,
 		      int off_x, int off_y);
 
-void PS5_Tilemap_Destroy(PS5_Tilemap* t);
+void PS5_Tilemap_Destroy(PS5_Tilemap *tmap);
 
 #endif /* SDL_ps5tilemap_h_ */
 

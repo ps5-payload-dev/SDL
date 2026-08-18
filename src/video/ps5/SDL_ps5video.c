@@ -227,13 +227,17 @@ static int PS5_VideoInit(_THIS)
 
     device_data->surface = SDL_CreateRGBSurfaceWithFormat(0, mode.w, mode.h, 32,
                                                           mode.format);
+    if (!device_data->surface) {
+        return -1;
+    }
+
     SDL_zero(display);
     display.desktop_mode = mode;
     display.current_mode = mode;
 
     device_data->tmap = PS5_Tilemap_Create(mode.w, mode.h);
     if(!device_data->tmap) {
-        return SDL_SetError("PS5_Tilemap_Create: %s", strerror(errno));
+        return SDL_OutOfMemory();
     }
 
     SDL_AddVideoDisplay(&display, SDL_FALSE);
@@ -259,10 +263,8 @@ static void PS5_VideoQuit(_THIS)
         sceKernelDeleteEqueue(device_data->evt_queue);
     }
 
-    if (device_data->tmap != 0) {
-        PS5_Tilemap_Destroy(device_data->tmap);
-        device_data->tmap = 0;
-    }
+    PS5_Tilemap_Destroy(device_data->tmap);
+    device_data->tmap = NULL;
 }
 
 static int PS5_CreateWindow(_THIS, SDL_Window *window)

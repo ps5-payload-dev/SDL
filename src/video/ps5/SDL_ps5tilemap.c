@@ -70,7 +70,7 @@ static Uint32 PS5_TilePixel(Uint32 x, Uint32 y, Uint32 width)
               PS5_TileOffset(0, (y % PS5_TILE_HEIGHT)))));
 }
 
-
+__attribute__((target("avx2")))
 static void PS5_TileArea(const PS5_Tilemap *tmap,
                          const Uint32 *src, Uint32 pitch, Uint32 *dst,
                          Uint32 x0, Uint32 x1, Uint32 y0, Uint32 y1)
@@ -80,6 +80,7 @@ static void PS5_TileArea(const PS5_Tilemap *tmap,
     const Uint32 quads = x1 / 4;
     const Uint32 *p;
     const Uint32 *s;
+    Uint32 rows;
     Uint32 base;
     Uint32 yo;
     Uint32 *d;
@@ -89,7 +90,6 @@ static void PS5_TileArea(const PS5_Tilemap *tmap,
     Uint32 y;
     Uint32 k;
     Uint32 g;
-    int rows;
 
     for(y = y0; y < y1; y += PS5_TILE_BAND) {
         base = (y / PS5_TILE_HEIGHT) * (PS5_TILE_HEIGHT * width);
@@ -151,7 +151,7 @@ static void PS5_Tilemap_RectUnion(SDL_Rect *acc, const SDL_Rect *r)
     acc->h = y1 - y0;
 }
 
-PS5_Tilemap* PS5_Tilemap_Create(int width, int height)
+PS5_Tilemap* PS5_Tilemap_Create(Uint32 width, Uint32 height)
 {
     PS5_Tilemap* tmap;
     Uint32 x;
@@ -240,6 +240,10 @@ void PS5_Tilemap_Blit(PS5_Tilemap *tmap,
 
 void PS5_Tilemap_Destroy(PS5_Tilemap *tmap)
 {
+    if(!tmap) {
+        return;
+    }
+
     SDL_free(tmap->colx);
     SDL_free(tmap);
 }
