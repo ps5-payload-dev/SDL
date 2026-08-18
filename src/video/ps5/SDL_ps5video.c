@@ -131,6 +131,11 @@ static int PS5_SetDisplayMode(_THIS, SDL_VideoDisplay * display,
     SDL_Surface *surface;
     PS5_Tilemap *tmap;
 
+    if(PS5_Tilemap_BufferSize(mode->w, mode->h) > device_data->memsize / 2) {
+        return SDL_SetError("%dx%d does not fit in the video buffers",
+                            mode->w, mode->h);
+    }
+
     if(device_data->evt_queue) {
         sceVideoOutDeleteFlipEvent(device_data->evt_queue, device_data->handle);
         sceKernelDeleteEqueue(device_data->evt_queue);

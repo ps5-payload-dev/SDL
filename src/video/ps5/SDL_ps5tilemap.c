@@ -151,6 +151,14 @@ static void PS5_Tilemap_RectUnion(SDL_Rect *acc, const SDL_Rect *r)
     acc->h = y1 - y0;
 }
 
+size_t PS5_Tilemap_BufferSize(Uint32 width, Uint32 height)
+{
+    Uint32 last_band = ((height-1) / PS5_TILE_HEIGHT) * (PS5_TILE_HEIGHT*width);
+    Uint32 last_tile = ((width-1) / PS5_TILE_WIDTH) * PS5_TILE_SIZE;
+
+    return (last_band + last_tile + PS5_TILE_SIZE) * sizeof(Uint32);
+}
+
 PS5_Tilemap* PS5_Tilemap_Create(Uint32 width, Uint32 height)
 {
     PS5_Tilemap* tmap;

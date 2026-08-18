@@ -27,6 +27,8 @@
 
 typedef struct PS5_Tilemap PS5_Tilemap;
 
+size_t PS5_Tilemap_BufferSize(Uint32 width, Uint32 height);
+
 PS5_Tilemap* PS5_Tilemap_Create(Uint32 width, Uint32 height);
 
 void PS5_Tilemap_Blit(PS5_Tilemap *tmap, const void *pixels, int pitch,
