@@ -2,6 +2,13 @@
 
 #include <stdint.h>
 
+#define PS5_PAD_PORT_TYPE_STANDARD       0
+#define PS5_PAD_PORT_TYPE_REMOTE_CONTROL 16
+
+#define PS5_USER_ID_SYSTEM 0xff
+
+#define PS5_PAD_ERROR_ALREADY_OPENED 0x80920004u
+
 #define PS5_PAD_BUTTON_L3        0x0002
 #define PS5_PAD_BUTTON_R3        0x0004
 #define PS5_PAD_BUTTON_OPTIONS   0x0008
@@ -95,7 +102,8 @@ typedef struct PS5_PadData
 } PS5_PadData;
 
 int scePadInit(void);
-int scePadOpen(int handle, int, int, void *);
+int scePadOpen(int user_id, int type, int index, void *param);
+int scePadGetHandle(int user_id, int type, int index);
 int scePadReadState(int handle, PS5_PadData *data);
 int scePadSetLightBar(int handle, const PS5_PadColor* color);
 int scePadSetVibrationMode(int handle, int mode);
