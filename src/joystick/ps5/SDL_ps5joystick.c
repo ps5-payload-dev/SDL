@@ -24,9 +24,12 @@
 
 #include <errno.h>
 
-#include "../SDL_sysjoystick.h"
 #include "SDL_error.h"
 #include "SDL_events.h"
+
+#include "../SDL_sysjoystick.h"
+#include "../../events/SDL_keyboard_c.h"
+
 
 #include "SDL_ps5joystick.h"
 
@@ -110,6 +113,49 @@ static const unsigned int btn_map[] = {
     PS5_PAD_BUTTON_R2         // righttrigger:b16
 };
 
+static const SDL_Scancode remote_map[] = {
+    SDL_SCANCODE_UNKNOWN,
+    SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3, SDL_SCANCODE_4,
+    SDL_SCANCODE_5, SDL_SCANCODE_6, SDL_SCANCODE_7, SDL_SCANCODE_8,
+    SDL_SCANCODE_9, SDL_SCANCODE_0,
+    SDL_SCANCODE_MINUS,
+    SDL_SCANCODE_EQUALS,
+    SDL_SCANCODE_RETURN,
+    SDL_SCANCODE_UNKNOWN,           // 14
+    SDL_SCANCODE_ESCAPE,            // back
+    SDL_SCANCODE_UNKNOWN,           // 16
+    SDL_SCANCODE_UNKNOWN,           // 17
+    SDL_SCANCODE_MENU,
+    SDL_SCANCODE_UNKNOWN,           // 19
+    SDL_SCANCODE_AUDIOPREV,
+    SDL_SCANCODE_AUDIONEXT,
+    SDL_SCANCODE_AUDIOPLAY,
+    SDL_SCANCODE_AUDIOREWIND,
+    SDL_SCANCODE_AUDIOFASTFORWARD,
+    SDL_SCANCODE_AUDIOSTOP,
+    SDL_SCANCODE_PAUSE,
+    SDL_SCANCODE_APPLICATION,       // context-menu
+    SDL_SCANCODE_UNKNOWN,           // 28
+    SDL_SCANCODE_UNKNOWN,           // 29
+    SDL_SCANCODE_UNKNOWN,           // subtitles
+    SDL_SCANCODE_UNKNOWN,           // audio
+    SDL_SCANCODE_UNKNOWN,           // camera angle
+    SDL_SCANCODE_UNKNOWN,           // display
+    SDL_SCANCODE_UNKNOWN,           // 34
+    SDL_SCANCODE_UNKNOWN,           // 35
+    SDL_SCANCODE_F4,                // blue
+    SDL_SCANCODE_F1,                // red
+    SDL_SCANCODE_F2,                // green
+    SDL_SCANCODE_F3,                // yellow
+    SDL_SCANCODE_PERIOD,
+    SDL_SCANCODE_PAGEUP,            // program up
+    SDL_SCANCODE_PAGEDOWN,          // program down
+    SDL_SCANCODE_BACKSPACE,         // previous channel
+    SDL_SCANCODE_UNKNOWN,           // guide
+    SDL_SCANCODE_AUDIOPLAY,         // play/pause
+};
+
+
 static PS5_PadContext *PS5_JoystickGetDevice(int device_index)
 {
     int n = 0;
@@ -165,25 +211,6 @@ static SDL_bool PS5_JoystickGetGamepadMapping(int device_index, SDL_GamepadMappi
         return SDL_FALSE;
     }
 
-    if (PS5_IS_REMOTE(ctx)) {
-        out->a.kind = EMappingKind_Button;
-        out->a.target = 0;
-        out->b.kind = EMappingKind_Button;
-        out->b.target = 1;
-        out->start.kind = EMappingKind_Button;
-        out->start.target = 6;
-        out->dpup.kind = EMappingKind_Button;
-        out->dpup.target = 11;
-        out->dpdown.kind = EMappingKind_Button;
-        out->dpdown.target = 12;
-        out->dpleft.kind = EMappingKind_Button;
-        out->dpleft.target = 13;
-        out->dpright.kind = EMappingKind_Button;
-        out->dpright.target = 14;
-
-        return SDL_TRUE;
-    }
-
     out->a.kind = EMappingKind_Button;
     out->a.target = 0;
     out->b.kind = EMappingKind_Button;
@@ -230,13 +257,28 @@ static SDL_bool PS5_JoystickGetGamepadMapping(int device_index, SDL_GamepadMappi
     return SDL_TRUE;
 }
 
+
+static void PS5_JoystickUpdateRemote(Uint8 prev, Uint8 curr) {
+    if (prev > 45 || curr > 45) {
+        return;
+    }
+
+    if (!prev && curr && remote_map[curr] != SDL_SCANCODE_UNKNOWN) {
+        SDL_SendKeyboardKey(SDL_PRESSED, remote_map[curr]);
+    }
+    if (prev && !curr && remote_map[prev] != SDL_SCANCODE_UNKNOWN) {
+        SDL_SendKeyboardKey(SDL_RELEASED, remote_map[prev]);
+    }
+}
+
+
 static void PS5_JoystickUpdate(SDL_Joystick *joystick)
 {
     PS5_PadContext *ctx = PS5_JoystickGetPadContext(joystick);
-    uint32_t btn_change;
-    PS5_PadData pad;
-    uint8_t hat = 0;
-    int err;
+    PS5_PadData pad = { 0 };
+    Uint32 btn_change = 0;
+    Uint8 hat = 0;
+    int err = 0;
 
     if (!ctx) {
         SDL_SetError("PS5_JoystickUpdate: instance not connected");
@@ -307,7 +349,13 @@ static void PS5_JoystickUpdate(SDL_Joystick *joystick)
         SDL_PrivateJoystickHat(joystick, 0, hat);
     }
 
-    memcpy(&ctx->pad, &pad, sizeof(pad));
+    if(SDL_memcmp(&ctx->pad.unknown, &pad.unknown, sizeof(pad.unknown))) {
+      if(PS5_IS_REMOTE(ctx)) {
+	PS5_JoystickUpdateRemote(ctx->pad.unknown[3], pad.unknown[3]);
+      }
+    }
+
+    SDL_memcpy(&ctx->pad, &pad, sizeof(pad));
 }
 
 static SDL_JoystickGUID PS5_JoystickGetDeviceGUID(int device_index)
@@ -321,7 +369,7 @@ static SDL_JoystickGUID PS5_JoystickGetDeviceGUID(int device_index)
 static void PS5_JoystickDetectRemote(void)
 {
     PS5_PadContext *ctx = &pad_ctx[PS5_REMOTE_INDEX];
-    PS5_PadData pad;
+    PS5_PadData pad = { 0 };
 
     if (ctx->handle < 0 || scePadReadState(ctx->handle, &pad) != 0) {
         return;
@@ -436,12 +484,12 @@ static void PS5_JoystickClose(SDL_Joystick *joystick)
 
 static int PS5_JoystickInit(void)
 {
+    PS5_PadContext *ctx;
     int handle;
     int err;
 
     for (int i = 0; i < SDL_arraysize(pad_ctx); i++) {
-        PS5_PadContext *ctx = &pad_ctx[i];
-
+        ctx = &pad_ctx[i];
         ctx->user_id = -1;
         ctx->name[0] = 0;
         ctx->handle = -1;
@@ -519,7 +567,7 @@ static int PS5_JoystickSetLED(SDL_Joystick *joystick, Uint8 red, Uint8 green,
                               Uint8 blue)
 {
     PS5_PadContext *ctx = PS5_JoystickGetPadContext(joystick);
-    PS5_PadColor color = {red, green, blue, 255};
+    PS5_PadColor color = { red, green, blue, 255 };
     int err;
 
     if (!ctx) {
