@@ -113,46 +113,47 @@ static const unsigned int btn_map[] = {
     PS5_PAD_BUTTON_R2         // righttrigger:b16
 };
 
+
 static const SDL_Scancode remote_map[] = {
     SDL_SCANCODE_UNKNOWN,
     SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3, SDL_SCANCODE_4,
     SDL_SCANCODE_5, SDL_SCANCODE_6, SDL_SCANCODE_7, SDL_SCANCODE_8,
     SDL_SCANCODE_9, SDL_SCANCODE_0,
-    SDL_SCANCODE_MINUS,
-    SDL_SCANCODE_EQUALS,
+    SDL_SCANCODE_MINUS,             // labeled as "11", on some Japanese RCs
+    SDL_SCANCODE_EQUALS,            // labeled as "12", on some Japanese RCs
     SDL_SCANCODE_RETURN,
-    SDL_SCANCODE_UNKNOWN,           // 14
-    SDL_SCANCODE_ESCAPE,            // back
-    SDL_SCANCODE_UNKNOWN,           // 16
-    SDL_SCANCODE_UNKNOWN,           // 17
+    SDL_SCANCODE_UNKNOWN,           // unknown (14)
+    SDL_SCANCODE_ESCAPE,            // typically labeled "back"
+    SDL_SCANCODE_UNKNOWN,           // unknown (16)
+    SDL_SCANCODE_UNKNOWN,           // unknown (17)
     SDL_SCANCODE_MENU,
-    SDL_SCANCODE_UNKNOWN,           // 19
+    SDL_SCANCODE_UNKNOWN,           // unknown (19)
     SDL_SCANCODE_AUDIOPREV,
     SDL_SCANCODE_AUDIONEXT,
     SDL_SCANCODE_AUDIOPLAY,
     SDL_SCANCODE_AUDIOREWIND,
     SDL_SCANCODE_AUDIOFASTFORWARD,
     SDL_SCANCODE_AUDIOSTOP,
-    SDL_SCANCODE_PAUSE,
-    SDL_SCANCODE_APPLICATION,       // context-menu
-    SDL_SCANCODE_UNKNOWN,           // 28
-    SDL_SCANCODE_UNKNOWN,           // 29
-    SDL_SCANCODE_UNKNOWN,           // subtitles
-    SDL_SCANCODE_UNKNOWN,           // audio
-    SDL_SCANCODE_UNKNOWN,           // camera angle
-    SDL_SCANCODE_UNKNOWN,           // display
-    SDL_SCANCODE_UNKNOWN,           // 34
-    SDL_SCANCODE_UNKNOWN,           // 35
-    SDL_SCANCODE_F4,                // blue
-    SDL_SCANCODE_F1,                // red
-    SDL_SCANCODE_F2,                // green
-    SDL_SCANCODE_F3,                // yellow
+    SDL_SCANCODE_PAUSE,             // typically labeled "pause"
+    SDL_SCANCODE_APPLICATION,       // context menu
+    SDL_SCANCODE_UNKNOWN,           // unknown (28)
+    SDL_SCANCODE_UNKNOWN,           // unknown (29)
+    SDL_SCANCODE_F1,                // typically labeled "subtitle"
+    SDL_SCANCODE_F2,                // typically labeled "audio"
+    SDL_SCANCODE_F3,                // typically labeled "camera"
+    SDL_SCANCODE_F4,                // typically labeled "display"
+    SDL_SCANCODE_UNKNOWN,           // unknown (34)
+    SDL_SCANCODE_UNKNOWN,           // unknown (35)
+    SDL_SCANCODE_F8,                // blue
+    SDL_SCANCODE_F5,                // red
+    SDL_SCANCODE_F6,                // green
+    SDL_SCANCODE_F7,                // yellow
     SDL_SCANCODE_PERIOD,
-    SDL_SCANCODE_PAGEUP,            // program up
-    SDL_SCANCODE_PAGEDOWN,          // program down
-    SDL_SCANCODE_BACKSPACE,         // previous channel
-    SDL_SCANCODE_UNKNOWN,           // guide
-    SDL_SCANCODE_AUDIOPLAY,         // play/pause
+    SDL_SCANCODE_PAGEUP,            // typically labeled "p+"
+    SDL_SCANCODE_PAGEDOWN,          // typically labeled "p-"
+    SDL_SCANCODE_BACKSPACE,         // typically labeled "prev"
+    SDL_SCANCODE_F9,                // typically labeled "guide"
+    SDL_SCANCODE_SPACE,             // typically labeled "play/pause"
 };
 
 
