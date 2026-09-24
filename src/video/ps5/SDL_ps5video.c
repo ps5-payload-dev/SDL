@@ -27,6 +27,7 @@
 
 #include "SDL_ps5video.h"
 #include "SDL_ps5keyboard.h"
+#include "SDL_ps5remote.h"
 #include "SDL_ps5osmesa.h"
 
 static void PS5_DestroyWindowFramebuffer(_THIS, SDL_Window *window)
@@ -300,6 +301,7 @@ static void PS5_DestroyWindow(_THIS, SDL_Window *window)
 static void PS5_PumpEvents(_THIS)
 {
     PS5_Keyboard_PumpEvents();
+    PS5_Remote_PumpEvents();
 }
 
 static SDL_VideoDevice *PS5_CreateDevice(void)
@@ -319,6 +321,7 @@ static SDL_VideoDevice *PS5_CreateDevice(void)
         return NULL;
     }
 
+    PS5_Remote_Init();
     PS5_Keyboard_Init();
     PS5_Keyboard_Open();
 

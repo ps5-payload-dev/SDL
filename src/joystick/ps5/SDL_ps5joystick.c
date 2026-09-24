@@ -28,15 +28,10 @@
 #include "SDL_events.h"
 
 #include "../SDL_sysjoystick.h"
-#include "../../events/SDL_keyboard_c.h"
-
 
 #include "SDL_ps5joystick.h"
 
 #define PS5_MAX_USERS 4
-
-#define PS5_REMOTE_INDEX PS5_MAX_USERS
-#define PS5_MAX_DEVICES  (PS5_MAX_USERS + 1)
 
 #define PS5_PAD_AXIS_LX 0
 #define PS5_PAD_AXIS_LY 1
@@ -45,8 +40,7 @@
 #define PS5_PAD_AXIS_L2 4
 #define PS5_PAD_AXIS_R2 5
 
-#define PS5_PAD_GUID    "0300d0424c050000e60c000011810000"
-#define PS5_REMOTE_GUID "030000004c050000cec0000011810000"
+#define PS5_PAD_GUID "0300d0424c050000e60c000011810000"
 
 typedef struct PS5_PadContext
 {
@@ -58,10 +52,8 @@ typedef struct PS5_PadContext
     PS5_PadData pad;
 } PS5_PadContext;
 
-static PS5_PadContext pad_ctx[PS5_MAX_DEVICES];
+static PS5_PadContext pad_ctx[PS5_MAX_USERS];
 static SDL_JoystickID instance_counter = 0;
-
-#define PS5_IS_REMOTE(ctx) ((ctx) == &pad_ctx[PS5_REMOTE_INDEX])
 
 // Map analog inputs from [0, 255] to [-32768, 32767]
 static int analog_map[256] = {
@@ -113,48 +105,6 @@ static const unsigned int btn_map[] = {
     PS5_PAD_BUTTON_R2         // righttrigger:b16
 };
 
-
-static const SDL_Scancode remote_map[] = {
-    SDL_SCANCODE_UNKNOWN,
-    SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3, SDL_SCANCODE_4,
-    SDL_SCANCODE_5, SDL_SCANCODE_6, SDL_SCANCODE_7, SDL_SCANCODE_8,
-    SDL_SCANCODE_9, SDL_SCANCODE_0,
-    SDL_SCANCODE_MINUS,             // labeled as "11", on some Japanese RCs
-    SDL_SCANCODE_EQUALS,            // labeled as "12", on some Japanese RCs
-    SDL_SCANCODE_RETURN,
-    SDL_SCANCODE_UNKNOWN,           // unknown (14)
-    SDL_SCANCODE_ESCAPE,            // typically labeled "back"
-    SDL_SCANCODE_UNKNOWN,           // unknown (16)
-    SDL_SCANCODE_UNKNOWN,           // unknown (17)
-    SDL_SCANCODE_MENU,
-    SDL_SCANCODE_UNKNOWN,           // unknown (19)
-    SDL_SCANCODE_AUDIOPREV,
-    SDL_SCANCODE_AUDIONEXT,
-    SDL_SCANCODE_AUDIOPLAY,
-    SDL_SCANCODE_AUDIOREWIND,
-    SDL_SCANCODE_AUDIOFASTFORWARD,
-    SDL_SCANCODE_AUDIOSTOP,
-    SDL_SCANCODE_PAUSE,             // typically labeled "pause"
-    SDL_SCANCODE_APPLICATION,       // context menu
-    SDL_SCANCODE_UNKNOWN,           // unknown (28)
-    SDL_SCANCODE_UNKNOWN,           // unknown (29)
-    SDL_SCANCODE_F1,                // typically labeled "subtitle"
-    SDL_SCANCODE_F2,                // typically labeled "audio"
-    SDL_SCANCODE_F3,                // typically labeled "camera"
-    SDL_SCANCODE_F4,                // typically labeled "display"
-    SDL_SCANCODE_UNKNOWN,           // unknown (34)
-    SDL_SCANCODE_UNKNOWN,           // unknown (35)
-    SDL_SCANCODE_F8,                // blue
-    SDL_SCANCODE_F5,                // red
-    SDL_SCANCODE_F6,                // green
-    SDL_SCANCODE_F7,                // yellow
-    SDL_SCANCODE_PERIOD,
-    SDL_SCANCODE_PAGEUP,            // typically labeled "p+"
-    SDL_SCANCODE_PAGEDOWN,          // typically labeled "p-"
-    SDL_SCANCODE_BACKSPACE,         // typically labeled "prev"
-    SDL_SCANCODE_F9,                // typically labeled "guide"
-    SDL_SCANCODE_SPACE,             // typically labeled "play/pause"
-};
 
 
 static PS5_PadContext *PS5_JoystickGetDevice(int device_index)
@@ -259,19 +209,6 @@ static SDL_bool PS5_JoystickGetGamepadMapping(int device_index, SDL_GamepadMappi
 }
 
 
-static void PS5_JoystickUpdateRemote(Uint8 prev, Uint8 curr) {
-    if (prev > 45 || curr > 45) {
-        return;
-    }
-
-    if (!prev && curr && remote_map[curr] != SDL_SCANCODE_UNKNOWN) {
-        SDL_SendKeyboardKey(SDL_PRESSED, remote_map[curr]);
-    }
-    if (prev && !curr && remote_map[prev] != SDL_SCANCODE_UNKNOWN) {
-        SDL_SendKeyboardKey(SDL_RELEASED, remote_map[prev]);
-    }
-}
-
 
 static void PS5_JoystickUpdate(SDL_Joystick *joystick)
 {
@@ -350,12 +287,6 @@ static void PS5_JoystickUpdate(SDL_Joystick *joystick)
         SDL_PrivateJoystickHat(joystick, 0, hat);
     }
 
-    if(SDL_memcmp(&ctx->pad.unknown, &pad.unknown, sizeof(pad.unknown))) {
-      if(PS5_IS_REMOTE(ctx)) {
-	PS5_JoystickUpdateRemote(ctx->pad.unknown[3], pad.unknown[3]);
-      }
-    }
-
     SDL_memcpy(&ctx->pad, &pad, sizeof(pad));
 }
 
@@ -367,31 +298,9 @@ static SDL_JoystickGUID PS5_JoystickGetDeviceGUID(int device_index)
     return ctx ? ctx->global_id : guid;
 }
 
-static void PS5_JoystickDetectRemote(void)
-{
-    PS5_PadContext *ctx = &pad_ctx[PS5_REMOTE_INDEX];
-    PS5_PadData pad = { 0 };
-
-    if (ctx->handle < 0 || scePadReadState(ctx->handle, &pad) != 0) {
-        return;
-    }
-
-    if (pad.connected && ctx->instance_id == -1) {
-        ctx->instance_id = instance_counter++;
-        SDL_zero(ctx->pad);
-        SDL_PrivateJoystickAdded(ctx->instance_id);
-
-    } else if (!pad.connected && ctx->instance_id != -1) {
-        SDL_PrivateJoystickRemoved(ctx->instance_id);
-        ctx->instance_id = -1;
-    }
-}
-
 static void PS5_JoystickDetect(void)
 {
     int user_ids[PS5_MAX_USERS];
-
-    PS5_JoystickDetectRemote();
 
     if (sceUserServiceGetLoginUserIdList(user_ids) != 0) {
         SDL_SetError("sceUserServiceGetLoginUserIdList: %s", strerror(errno));
@@ -443,23 +352,21 @@ static int PS5_JoystickOpen(SDL_Joystick *joystick, int device_index)
         return SDL_SetError("PS5_JoystickOpen: Invalid device index");
     }
 
-    if (!PS5_IS_REMOTE(ctx)) {
-        ctx->handle = scePadOpen(ctx->user_id, PS5_PAD_PORT_TYPE_STANDARD,
-                                 0, NULL);
-        if (ctx->handle < 0) {
-            return SDL_SetError("scePadOpen: 0x%08x", ctx->handle);
-        }
+    ctx->handle = scePadOpen(ctx->user_id, PS5_PAD_PORT_TYPE_STANDARD,
+                             0, NULL);
+    if (ctx->handle < 0) {
+        return SDL_SetError("scePadOpen: 0x%08x", ctx->handle);
+    }
 
-        err = scePadSetVibrationMode(ctx->handle, 2);
-        if(err) {
-            scePadClose(ctx->handle);
-            ctx->handle = -1;
-            return SDL_SetError("scePadSetVibration: 0x%08x", err);
-        }
+    err = scePadSetVibrationMode(ctx->handle, 2);
+    if(err) {
+        scePadClose(ctx->handle);
+        ctx->handle = -1;
+        return SDL_SetError("scePadSetVibration: 0x%08x", err);
     }
 
     joystick->nbuttons = SDL_arraysize(btn_map);
-    joystick->naxes = (PS5_IS_REMOTE(ctx)) ? 0 : 6;
+    joystick->naxes = 6;
     joystick->nhats = 1;
     joystick->instance_id = ctx->instance_id;
 
@@ -471,7 +378,7 @@ static void PS5_JoystickClose(SDL_Joystick *joystick)
     PS5_PadContext *ctx = PS5_JoystickGetPadContext(joystick);
     int err;
 
-    if (!ctx || PS5_IS_REMOTE(ctx)) {
+    if (!ctx) {
         return;
     }
 
@@ -486,7 +393,6 @@ static void PS5_JoystickClose(SDL_Joystick *joystick)
 static int PS5_JoystickInit(void)
 {
     PS5_PadContext *ctx;
-    int handle;
     int err;
 
     for (int i = 0; i < SDL_arraysize(pad_ctx); i++) {
@@ -495,8 +401,7 @@ static int PS5_JoystickInit(void)
         ctx->name[0] = 0;
         ctx->handle = -1;
         ctx->instance_id = -1;
-        ctx->global_id = SDL_GUIDFromString(PS5_IS_REMOTE(ctx) ? PS5_REMOTE_GUID
-                                                               : PS5_PAD_GUID);
+        ctx->global_id = SDL_GUIDFromString(PS5_PAD_GUID);
     }
 
     err = sceUserServiceInitialize(0);
@@ -509,18 +414,6 @@ static int PS5_JoystickInit(void)
         return SDL_SetError("scePadInit: 0x%08x", err);
     }
 
-    handle = scePadOpen(PS5_USER_ID_SYSTEM, PS5_PAD_PORT_TYPE_REMOTE_CONTROL,
-                        0, NULL);
-    if ((unsigned)handle == PS5_PAD_ERROR_ALREADY_OPENED) {
-        handle = scePadGetHandle(PS5_USER_ID_SYSTEM,
-                                 PS5_PAD_PORT_TYPE_REMOTE_CONTROL, 0);
-    }
-    if (handle > 0) {
-        pad_ctx[PS5_REMOTE_INDEX].handle = handle;
-        SDL_strlcpy(pad_ctx[PS5_REMOTE_INDEX].name, "PS5 Remote Control",
-                    sizeof(pad_ctx[PS5_REMOTE_INDEX].name));
-    }
-
     PS5_JoystickDetect();
 
     return 0;
@@ -528,20 +421,10 @@ static int PS5_JoystickInit(void)
 
 static void PS5_JoystickQuit(void)
 {
-    if (pad_ctx[PS5_REMOTE_INDEX].handle >= 0) {
-        scePadClose(pad_ctx[PS5_REMOTE_INDEX].handle);
-        pad_ctx[PS5_REMOTE_INDEX].handle = -1;
-    }
 }
 
 static Uint32 PS5_JoystickGetCapabilities(SDL_Joystick *joystick)
 {
-    PS5_PadContext *ctx = PS5_JoystickGetPadContext(joystick);
-
-    if (ctx && PS5_IS_REMOTE(ctx)) {
-        return 0;
-    }
-
     return SDL_JOYCAP_LED | SDL_JOYCAP_RUMBLE;
 }
 
